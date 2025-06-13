@@ -1,38 +1,29 @@
 import os
 from dotenv import load_dotenv
-from telegram.ext import Application
-from handlers.funnel_handlers import register_handlers
-import logging
 from fastapi import FastAPI, Request
-import uvicorn
+from telegram import Update
+from telegram.ext import Application, ContextTypes, MessageHandler, CommandHandler, filters
+from handlers.funnel_handlers import register_handlers
 
-# Загрузка переменных
 load_dotenv()
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-PORT = int(os.environ.get("PORT", 8000))
 
-# Логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+app = FastAPI()
+telegram_app = Application.builder().token(BOT_TOKEN).build()
 
-logger = logging.getLogger(__name__)
+# Регистрируем обработчики
+register_handlers(telegram_app)
 
-# Инициализация бота и FastAPI
-app = Application.builder().token(BOT_TOKEN).build()
-register_handlers(app)
+@app.on_event("startup")
+async def startup():
+    await telegram_app.bot.set_webhook(url=WEBHOOK_URL)
+    print("Webhook установлен!")
 
-fastapi_app = FastAPI()
-
-@fastapi_app.post("/webhook")
-async def telegram_webhook(request: Request):
-    data = await request.json()
-    update = app.update_queue._update_class.de_json(data, app.bot)
-    await app.process_update(update)
+@app.post("/webhook")
+async def process_webhook(req: Request):
+    data = await req.json()
+    update = Update.de_json(data, telegram_app.bot)
+    await telegram_app.process_update(update)
     return {"ok": True}
-
-if __name__ == "__main__":
-    app.bot.set_webhook(WEBHOOK_URL)
-    uvicorn.run(fastapi_app, host="0.0.0.0", port=PORT)
