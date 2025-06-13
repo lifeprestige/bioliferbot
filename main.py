@@ -9,7 +9,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 8443))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Например, https://bioliferbot.onrender.com/webhook
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Например: https://bioliferbot.onrender.com/webhook
 
 # Логирование
 logging.basicConfig(
@@ -27,9 +27,7 @@ register_handlers(app)
 # Webhook-режим (для Render)
 if __name__ == "__main__":
     app.run_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    webhook_url=WEBHOOK_URL,
-    webhook_path="/webhook"
-)
-
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=WEBHOOK_URL
+    )
