@@ -27,7 +27,9 @@ register_handlers(app)
 # Webhook-режим (для Render)
 if __name__ == "__main__":
     app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL
-    )
+    listen="0.0.0.0",
+    port=PORT,
+    webhook_url=WEBHOOK_URL,
+    webhook_path="/webhook"
+)
+
