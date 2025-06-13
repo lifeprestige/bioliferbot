@@ -18,8 +18,15 @@ register_handlers(telegram_app)
 
 @app.on_event("startup")
 async def startup():
+    await telegram_app.initialize()  # ✅ добавлено
+    await telegram_app.start()       # ✅ добавлено
     await telegram_app.bot.set_webhook(url=WEBHOOK_URL)
     print("Webhook установлен!")
+
+@app.on_event("shutdown")
+async def shutdown():
+    await telegram_app.stop()
+    await telegram_app.shutdown()
 
 @app.post("/webhook")
 async def process_webhook(req: Request):
