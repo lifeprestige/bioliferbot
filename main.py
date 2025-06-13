@@ -3,13 +3,14 @@ from dotenv import load_dotenv
 from telegram.ext import Application
 from handlers.funnel_handlers import register_handlers
 import logging
+from fastapi import FastAPI, Request
+import uvicorn
 
-# Загрузка переменных окружения
+# Загрузка переменных
 load_dotenv()
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-PORT = int(os.environ.get("PORT", 8443))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Пример: https://bioliferbot.onrender.com
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+PORT = int(os.environ.get("PORT", 8000))
 
 # Логирование
 logging.basicConfig(
@@ -17,16 +18,21 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Инициализация приложения
-app = Application.builder().token(BOT_TOKEN).build()
+logger = logging.getLogger(__name__)
 
-# Регистрируем обработчики
+# Инициализация бота и FastAPI
+app = Application.builder().token(BOT_TOKEN).build()
 register_handlers(app)
 
-# Запуск в режиме Webhook
+fastapi_app = FastAPI()
+
+@fastapi_app.post("/webhook")
+async def telegram_webhook(request: Request):
+    data = await request.json()
+    update = app.update_queue._update_class.de_json(data, app.bot)
+    await app.process_update(update)
+    return {"ok": True}
+
 if __name__ == "__main__":
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL  # Без /webhook в конце!
-    )
+    app.bot.set_webhook(WEBHOOK_URL)
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=PORT)
